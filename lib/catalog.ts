@@ -1,0 +1,13 @@
+import { z } from 'zod';
+import {editorSchema} from './appearance';
+export const roomIds=['gol','serbest','kart','faul'] as const;
+const baseDefaults={name:'En',tagline:'FUTBOLUN ENLERİ',title:'Sahne futbolun. Karar senin.',subtitle:'Anları izle. Favorini seç. Zirveyi sen belirle.',background:'#081c16',surface:'#102b22',accent:'#d5ff62',text:'#f3f6ea',backgroundImage:'',fontSize:16,motion:true,fieldLines:true,rooms:[{id:'gol',title:'En Güzel Gol',description:'Bir vuruştan çok daha fazlası.',accent:'#d5ff62'},{id:'serbest',title:'En Güzel Serbest Vuruş',description:'Barajın ötesinde, kusursuz bir imza.',accent:'#84d9f7'},{id:'kart',title:'En Saçma Kırmızı Kart',description:'O karar hâlâ tartışılıyor.',accent:'#ff9086'},{id:'faul',title:'En Sert Faul',description:'Maçın bütün havasını değiştiren an.',accent:'#d3b6fa'}]};
+const color=z.string().regex(/^#[0-9a-f]{6}$/i);
+export const designSchema=z.object({editor:editorSchema,name:z.string().trim().min(1).max(32),tagline:z.string().max(60),title:z.string().min(1).max(120),subtitle:z.string().max(200),background:color,surface:color,accent:color,text:color,backgroundImage:z.string().max(1500).refine(v=>!v||safeImage(v)),fontSize:z.number().int().min(16).max(24),motion:z.boolean(),fieldLines:z.boolean(),rooms:z.array(z.object({id:z.enum(roomIds),title:z.string().trim().min(1).max(80),description:z.string().max(180),accent:color})).length(4).refine(v=>new Set(v.map(x=>x.id)).size===4)});
+export type Design=z.infer<typeof designSchema>;
+export const defaults:Design=designSchema.parse(baseDefaults);
+export function safeImage(v:string){try{return new URL(v).protocol==='https:'}catch{return false}}
+export function toEmbed(v:string){if(!v.trim())return '';try{const u=new URL(v);if(u.protocol!=='https:')return null;const h=u.hostname.replace(/^www\./,'');let id='';if(h==='youtu.be')id=u.pathname.slice(1);if(['youtube.com','m.youtube.com','youtube-nocookie.com'].includes(h))id=u.searchParams.get('v')??(/^\/(embed|shorts)\//.test(u.pathname)?u.pathname.split('/')[2]:'');if(/^[\w-]{11}$/.test(id))return `https://www.youtube-nocookie.com/embed/${id}?rel=0`;if(['vimeo.com','player.vimeo.com'].includes(h)){id=u.pathname.split('/').filter(Boolean).pop()??'';if(/^\d+$/.test(id))return `https://player.vimeo.com/video/${id}`;}return null}catch{return null}}
+export function thumb(embed:string){const id=embed.match(/youtube-nocookie.com\/embed\/([\w-]{11})/)?.[1];return id?`https://i.ytimg.com/vi/${id}/hqdefault.jpg`:null}
+export type Clip={id:string;room:string;slot:number;title:string;embed:string;votes:number};
+export type Board={design:Design;version:number;clips:Clip[];mine:string[];user:null|{id:string;name:string;email:string;role:'member'|'editor'|'owner'};editors:string[]};
