@@ -34,11 +34,15 @@ export default function ChatPanel({
   className = '',
 }: Props) {
   const [text, setText] = useState('');
-  const endRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const lastId = messages.at(-1)?.id;
 
+  // Yeni mesaj gelince en alta kay (normal chat davranışı)
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
-  }, [messages.length]);
+    const el = viewportRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  }, [lastId]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,12 +56,13 @@ export default function ChatPanel({
     <div className={`flex h-full min-h-0 flex-col bg-[var(--panel,#102b22)] ${className}`}>
       <MessageScrollerProvider>
         <MessageScroller className="flex-1 min-h-0">
-          <MessageScrollerViewport>
+          <MessageScrollerViewport ref={viewportRef}>
             <MessageScrollerContent className="gap-3 p-3">
-              {messages.map((m) => {
+              {messages.map((m, i) => {
                 const bg = colorForMember(m.memberId);
+                const isLast = i === messages.length - 1;
                 return (
-                  <MessageScrollerItem key={m.id} scrollAnchor={m.id === messages.at(-1)?.id}>
+                  <MessageScrollerItem key={m.id} scrollAnchor={isLast}>
                     <Message>
                       <MessageContent
                         className="rounded-xl px-3.5 py-2.5 text-[var(--ink,#f3f6ea)] shadow-sm"
@@ -72,7 +77,6 @@ export default function ChatPanel({
                   </MessageScrollerItem>
                 );
               })}
-              <div ref={endRef} />
             </MessageScrollerContent>
           </MessageScrollerViewport>
           <MessageScrollerButton direction="end" />
