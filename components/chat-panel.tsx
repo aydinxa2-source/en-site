@@ -35,14 +35,16 @@ export default function ChatPanel({
 }: Props) {
   const [text, setText] = useState('');
   const viewportRef = useRef<HTMLDivElement>(null);
-  const lastId = messages.at(-1)?.id;
+  // Son mesaj en üstte olsun diye ters çevir
+  const reversed = [...messages].reverse();
+  const newestId = reversed[0]?.id;
 
-  // Yeni mesaj gelince en alta kay (normal chat davranışı)
+  // Yeni mesaj gelince en üste kay
   useEffect(() => {
     const el = viewportRef.current;
     if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-  }, [lastId]);
+    el.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [newestId]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,11 +60,11 @@ export default function ChatPanel({
         <MessageScroller className="flex-1 min-h-0">
           <MessageScrollerViewport ref={viewportRef}>
             <MessageScrollerContent className="gap-3 p-3">
-              {messages.map((m, i) => {
+              {reversed.map((m, i) => {
                 const bg = colorForMember(m.memberId);
-                const isLast = i === messages.length - 1;
+                const isNewest = i === 0;
                 return (
-                  <MessageScrollerItem key={m.id} scrollAnchor={isLast}>
+                  <MessageScrollerItem key={m.id} scrollAnchor={isNewest}>
                     <Message>
                       <MessageContent
                         className="rounded-xl px-3.5 py-2.5 text-[var(--ink,#f3f6ea)] shadow-sm"
@@ -79,7 +81,7 @@ export default function ChatPanel({
               })}
             </MessageScrollerContent>
           </MessageScrollerViewport>
-          <MessageScrollerButton direction="end" />
+          <MessageScrollerButton direction="start" />
         </MessageScroller>
       </MessageScrollerProvider>
 
